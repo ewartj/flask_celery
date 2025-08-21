@@ -1,0 +1,28 @@
+[tool.poetry]
+name = "flask-celery-test"
+version = "0.1.0"
+description = ""
+authors = ["ewartj <ewart.jonny@gmail.com>"]
+readme = "README.md"
+packages = [{include = "flask_celery_test"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+amqp = "5.3.1"
+billiard = "4.2.1"
+blinker = "1.9.0"
+celery = "5.5.3"
+flask = "3.1.1"
+itsdangerous = "2.2.0"
+kombu = "5.5.4"
+markupsafe = "3.0.2"
+redis = "6.4.0"
+vine = "5.1.0"
+werkzeug = "3.1.3"
+jinja2 = "^3.1.6"
+gibberish-detector = "^0.1.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

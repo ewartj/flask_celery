@@ -1,5 +1,7 @@
-from celery import Celery, Task
 from flask import Flask
+
+from celery import Celery, Task
+
 
 def celery_init_app(app: Flask) -> Celery:
     class FlaskTask(Task):
@@ -12,6 +14,7 @@ def celery_init_app(app: Flask) -> Celery:
     celery_app.set_default()
     app.extensions["celery"] = celery_app
     return celery_app
+
 
 def create_app() -> Flask:
     app = Flask(__name__)
