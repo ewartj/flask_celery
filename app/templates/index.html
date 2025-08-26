@@ -1,90 +1,95 @@
 <html>
   <head>
     <title>Flask + Celery Examples</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" 
-    rel="stylesheet" 
-    integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" 
-    crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        .progress {
-            width: 100%;
-            text-align: center;
-        }
+      body {
+        background: #f8fafc;
+      }
+      .main-card {
+        margin-top: 40px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+      }
+      .progress-section {
+        margin-top: 30px;
+      }
     </style>
   </head>
-  </head>
   <body>
-    <h1>Flask + Celery Examples</h1>
-    <script src="//cdnjs.cloudflare.com/ajax/libs/nanobar/0.2.1/nanobar.min.js"></script>
+    <nav class="navbar navbar-dark bg-primary mb-4">
+      <div class="container-fluid">
+        <span class="navbar-brand mb-0 h1">Flask + Celery Demo</span>
+      </div>
+    </nav>
+    <div class="container">
+      <div class="card main-card">
+        <div class="card-body">
+          <h2 class="card-title">Background Task Examples</h2>
+          <p class="card-text text-muted">Run background jobs and watch their progress in real time.</p>
+          <div class="mb-3">
+            <button id="start-sm-job" class="btn btn-success me-2">Start Short Calculation</button>
+            <button id="start-bg-job" class="btn btn-warning">Start Long Calculation</button>
+          </div>
+          <div id="progress" class="progress-section"></div>
+        </div>
+      </div>
+    </div>
     <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" 
-    integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" 
-    crossorigin="anonymous">
-    </script>
-    <h2>Example 1: short running task with progress updates</h2>
-    <button id="start-sm-job">Start short Calculation</button><br><br>
-    <br>
-    <h2>Example 2: Long running task with progress updates</h2>
-    <button id="start-bg-job">Start Long Calculation</button><br><br>
-    <hr>
-    <div id="progress"></div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        function start_task(endpoint) {
-            // add task status elements
-            var div = $('<div class="progress"><div></div><div>0%</div><div>...</div><div>&nbsp;</div></div><hr>');
-            $('#progress').append(div);
+      function start_task(endpoint) {
+        // Create a Bootstrap progress bar
+        var progressBar = $(`
+          <div class="mb-4">
+            <div class="progress" style="height: 30px;">
+              <div class="progress-bar progress-bar-striped progress-bar-animated bg-info" 
+                   role="progressbar" style="width: 0%">0%</div>
+            </div>
+            <div class="mt-2 status-text text-secondary">Starting...</div>
+            <div class="mt-1 result-text"></div>
+          </div>
+        `);
+        $('#progress').append(progressBar);
 
-            // create a progress bar
-            var nanobar = new Nanobar({
-                bg: '#44f',
-                target: div[0].childNodes[0]
-            });
-
-            // send ajax POST request to start background job
-            $.ajax({
-                type: 'POST',
-                url: endpoint,
-                success: function(data, status, request) {
-                    var status_url = request.getResponseHeader('Location');
-                    update_progress(status_url, nanobar, div[0]);
-                },
-                error: function() {
-                    alert('Unexpected error');
-                }
-            });
-        }
-
-        function update_progress(status_url, nanobar, status_div) {
-            // send GET request to status URL
-            $.getJSON(status_url, function(data) {
-                // update UI
-                var percent = parseInt(data['current'] * 100 / data['total']);
-                nanobar.go(percent);
-                $(status_div.childNodes[1]).text(percent + '%');
-                $(status_div.childNodes[2]).text(data['status']);
-                if (data['state'] != 'PENDING' && data['state'] != 'PROGRESS') {
-                    if ('result' in data) {
-                        // show result
-                        $(status_div.childNodes[3]).text('Result: ' + data['result']);
-                    }
-                    else {
-                        // something unexpected happened
-                        $(status_div.childNodes[3]).text('Result: ' + data['state']);
-                    }
-                }
-                else {
-                    // rerun in 2 seconds
-                    setTimeout(function() {
-                        update_progress(status_url, nanobar, status_div);
-                    }, 2000);
-                }
-            });
-        }
-
-        $(function() {
-            $('#start-sm-job').click(function() { start_task('/shorttask'); });
-            $('#start-bg-job').click(function() { start_task('/longtask'); });
+        $.ajax({
+          type: 'POST',
+          url: endpoint,
+          success: function(data, status, request) {
+            var status_url = request.getResponseHeader('Location');
+            update_progress(status_url, progressBar);
+          },
+          error: function() {
+            progressBar.find('.status-text').text('Unexpected error').addClass('text-danger');
+          }
         });
+      }
+
+      function update_progress(status_url, progressBar) {
+        $.getJSON(status_url, function(data) {
+          var percent = parseInt(data['current'] * 100 / data['total']);
+          var bar = progressBar.find('.progress-bar');
+          bar.css('width', percent + '%').text(percent + '%');
+          progressBar.find('.status-text').text(data['status']);
+          if (data['state'] != 'PENDING' && data['state'] != 'PROGRESS') {
+            if ('result' in data) {
+              progressBar.find('.result-text').html('<span class="text-success">Result: ' + data['result'] + '</span>');
+              bar.removeClass('bg-info').addClass('bg-success');
+            } else {
+              progressBar.find('.result-text').html('<span class="text-danger">Result: ' + data['state'] + '</span>');
+              bar.removeClass('bg-info').addClass('bg-danger');
+            }
+          } else {
+            setTimeout(function() {
+              update_progress(status_url, progressBar);
+            }, 2000);
+          }
+        });
+      }
+
+      $(function() {
+        $('#start-sm-job').click(function() { start_task('/shorttask'); });
+        $('#start-bg-job').click(function() { start_task('/longtask'); });
+      });
     </script>
   </body>
 </html>
