@@ -5,10 +5,9 @@ import random
 import time
 from flask import Flask, request, render_template, session, flash, redirect, \
     url_for, jsonify
-from flask_mail import Mail, Message
 from celery import Celery
 from app.celery.jobs.long_task import (
-    long_task
+    long_task, short_task
 )
 
 views_blueprint = Blueprint("views", __name__)
@@ -22,14 +21,32 @@ def index():
 def longtask():
     print("Starting long task")
     task = long_task.apply_async()
-    return jsonify({}), 202, {'Location': url_for('views.taskstatus',
+    return jsonify({}), 202, {'Location': url_for('views.long_taskstatus',
+                                                  task_id=task.id)}
+
+@views_blueprint.route('/shorttask', methods=['POST'])
+def shorttask():
+    print("Starting short task")
+    task = short_task.apply_async()
+    return jsonify({}), 202, {'Location': url_for('views.short_taskstatus',
                                                   task_id=task.id)}
 
 
 @views_blueprint.route('/status/<task_id>')
-def taskstatus(task_id):
+def long_taskstatus(task_id):
     task = long_task.AsyncResult(task_id)
+    response = get_responce(task)
+    return jsonify(response)
+
+@views_blueprint.route('/status/<task_id>')
+def short_taskstatus(task_id):
+    task = short_task.AsyncResult(task_id)
+    response = get_responce(task)
+    return jsonify(response)
+
+def get_responce(task):
     if task.state == 'PENDING':
+        # job did not start yet
         response = {
             'state': task.state,
             'current': 0,
@@ -53,4 +70,4 @@ def taskstatus(task_id):
             'total': 1,
             'status': str(task.info),  # this is the exception raised
         }
-    return jsonify(response)
+    return response

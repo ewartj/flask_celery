@@ -1,6 +1,10 @@
 <html>
   <head>
     <title>Flask + Celery Examples</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" 
+    rel="stylesheet" 
+    integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" 
+    crossorigin="anonymous">
     <style>
         .progress {
             width: 100%;
@@ -8,18 +12,26 @@
         }
     </style>
   </head>
+  </head>
   <body>
     <h1>Flask + Celery Examples</h1>
     <script src="//cdnjs.cloudflare.com/ajax/libs/nanobar/0.2.1/nanobar.min.js"></script>
     <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" 
+    integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" 
+    crossorigin="anonymous">
+    </script>
+    <h2>Example 1: short running task with progress updates</h2>
+    <button id="start-sm-job">Start short Calculation</button><br><br>
+    <br>
     <h2>Example 2: Long running task with progress updates</h2>
-    <!--<button onclick="start_long_task();">Start Long Calculation</button><br><br>-->
     <button id="start-bg-job">Start Long Calculation</button><br><br>
+    <hr>
     <div id="progress"></div>
     <script>
-        function start_long_task() {
+        function start_task(endpoint) {
             // add task status elements
-            div = $('<div class="progress"><div></div><div>0%</div><div>...</div><div>&nbsp;</div></div><hr>');
+            var div = $('<div class="progress"><div></div><div>0%</div><div>...</div><div>&nbsp;</div></div><hr>');
             $('#progress').append(div);
 
             // create a progress bar
@@ -31,9 +43,9 @@
             // send ajax POST request to start background job
             $.ajax({
                 type: 'POST',
-                url: '/longtask',
+                url: endpoint,
                 success: function(data, status, request) {
-                    status_url = request.getResponseHeader('Location');
+                    var status_url = request.getResponseHeader('Location');
                     update_progress(status_url, nanobar, div[0]);
                 },
                 error: function() {
@@ -41,11 +53,12 @@
                 }
             });
         }
+
         function update_progress(status_url, nanobar, status_div) {
             // send GET request to status URL
             $.getJSON(status_url, function(data) {
                 // update UI
-                percent = parseInt(data['current'] * 100 / data['total']);
+                var percent = parseInt(data['current'] * 100 / data['total']);
                 nanobar.go(percent);
                 $(status_div.childNodes[1]).text(percent + '%');
                 $(status_div.childNodes[2]).text(data['status']);
@@ -67,8 +80,10 @@
                 }
             });
         }
+
         $(function() {
-            $('#start-bg-job').click(start_long_task);
+            $('#start-sm-job').click(function() { start_task('/shorttask'); });
+            $('#start-bg-job').click(function() { start_task('/longtask'); });
         });
     </script>
   </body>
